@@ -1,0 +1,127 @@
+{
+  "modName": "SVRPhysicalDoors",
+  "displayName": "SVR Physical Doors",
+  "minMcmVersion": 13,
+  "pluginRequirements": [
+    "SkyUI_SE.esp",
+    "MCMHelper.esp"
+  ],
+  "cursorFillMode": "topToBottom",
+  "pages": [
+    {
+      "pageDisplayName": "$SVD_Physics",
+      "content": [
+        {
+          "id": "fInertia:Physics",
+          "text": "$SVD_fInertia",
+          "help": "$SVD_fInertiaHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0.5,
+            "max": 4,
+            "step": 0.05,
+            "formatString": "{2}"
+          }
+        },
+        {
+          "id": "fGrabAcceleration:Physics",
+          "text": "$SVD_fGrabAcceleration",
+          "help": "$SVD_fGrabAccelerationHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0.25,
+            "max": 24,
+            "step": 0.1,
+            "formatString": "{2}"
+          }
+        },
+        {
+          "id": "fDamping:Physics",
+          "text": "$SVD_fDamping",
+          "help": "$SVD_fDampingHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0,
+            "max": 1,
+            "step": 0.01,
+            "formatString": "{2}"
+          }
+        },
+        {
+          "id": "fFriction:Physics",
+          "text": "$SVD_fFriction",
+          "help": "$SVD_fFrictionHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0,
+            "max": 4,
+            "step": 0.05,
+            "formatString": "{2}"
+          }
+        },
+        {
+          "id": "fSpeedLimit:Physics",
+          "text": "$SVD_fSpeedLimit",
+          "help": "$SVD_fSpeedLimitHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0.25,
+            "max": 16,
+            "step": 0.05,
+            "formatString": "{2}"
+          }
+        },
+        {
+          "id": "fPalmStrength:Physics",
+          "text": "$SVD_fPalmStrength",
+          "help": "$SVD_fPalmStrengthHelp",
+          "type": "slider",
+          "valueOptions": {
+            "sourceType": "ModSettingFloat",
+            "min": 0.1,
+            "max": 2,
+            "step": 0.05,
+            "formatString": "{2}"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$SVD_Interaction",
+      "content": [
+        {
+          "id": "bDisableHighlight:Interaction",
+          "text": "$SVD_bDisableHighlight",
+          "help": "$SVD_bDisableHighlightHelp",
+          "type": "toggle",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bShowDoorDuringLockpicking:Interaction",
+          "text": "$SVD_bShowDoorDuringLockpicking",
+          "help": "$SVD_bShowDoorDuringLockpickingHelp",
+          "type": "toggle",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "id": "bLockpickOnGrab:Interaction",
+          "text": "$SVD_bLockpickOnGrab",
+          "help": "$SVD_bLockpickOnGrabHelp",
+          "type": "toggle",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        }
+      ]
+    }
+  ]
+}
