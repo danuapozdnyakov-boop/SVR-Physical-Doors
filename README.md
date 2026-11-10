@@ -1,6 +1,10 @@
-# SVRPhysicalDoors 0.1.40 Beta — source
+# SVRPhysicalDoors 0.1.41 Beta — source
 
-Source matching the 0.1.40 Beta Nexus release. This repository is for code review and development; it is not an installable mod.
+Source matching the 0.1.41 Beta runtime archive. This repository is for code review and development; it is not an installable mod.
+
+## Changes in 0.1.41
+- Leave the Riften market stall door to Interactive Activators VR when active.
+- Validate lock state and the HIGGS hold before dispatching a grab-triggered lockpick request.
 
 ## Layout
 - `SVRPhysicalDoors/`: plugin source, model profiles, supporting headers and policy/math tests.

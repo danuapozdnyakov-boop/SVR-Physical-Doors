@@ -1,13 +1,16 @@
 {
-  "version": "0.1.40",
-  "dll_sha256": "d432a2a794a863e4d56b884dafcd402a324fa458e94f63ea05d479da961696d3",
+  "version": "0.1.41",
+  "archive": "SVRPhysicalDoors-0.1.41-beta.zip",
+  "archive_sha256": "cfb75f4efb97838a89ef5afbf5515a3abfedb972097a47c39366ba2a95e716e3",
+  "dll_sha256": "0e4d9a11e7c0063d137e186bd77d340811b79aa68e305b4b8ba75fd95b9b62e3",
   "meshes": 168,
-  "installed_payload_identical": true,
   "PBR_in_base": false,
   "payload": {
+    "CHANGELOG.txt": "18d44c2e19dbcb1ac811f52135fe875545a110e4b5a6da21dcf94ef81ec90ffb",
     "COPYING.txt": "f817886ee6bb65ed3098a7987b1e9781653d15c71f85589ce0d2af663c66d373",
     "CREDITS.txt": "0192454ec8ce30415871b90ba0394364a439dea8b572da884d5857d542a1ea80",
     "EXCEPTIONS.md": "649272d176502ce31cd1314810f4b27035bf08417b4f09c6a2971d13ea4a7aba",
+    "README.txt": "b3aa8a82dc781821c5e7904e238e7b4623d4014d0c2c8c65857e6cb2bfcc6174",
     "SVRPhysicalDoors.esp": "468c402f75fab7af9be2601cdfbf3c18d930479d091c9621a8bece11b35726f8",
     "Interface\\Translations\\SVRPhysicalDoors_ENGLISH.txt": "463bfc9e73614123c19f78990ad7b597f66e025b26a57ef106bdb54bba471a3a",
     "Interface\\Translations\\SVRPhysicalDoors_RUSSIAN.txt": "151758040ed6cad727d8b6e4d16c490ea443638f6f7260f7daabee8fc01a5066",
@@ -181,8 +184,7 @@
     "meshes\\svrphysicaldoorsg110\\dungeons\\ship\\katariah\\shipkatariahdoorload01.nif": "76213c412f760b6c09d1ac98fdd831b5516a0b9cfa1add4d1e41c89867b66ae0",
     "meshes\\svrphysicaldoorsg110\\dungeons\\ship\\questitems\\shipanchorchain01.nif": "055ac36c816e9c763482163ba4f267bc173f824019676b6e27a6be34e9e3c726",
     "meshes\\svrphysicaldoorsg110\\_byoh\\architecture\\byohhouse\\byohwrdoorload01.nif": "0546cf0d500ec347025649721f133c0beebff4f17936cdfd7c84cb88cae893b4",
-    "SKSE\\Plugins\\SVRPhysicalDoors.dll": "d432a2a794a863e4d56b884dafcd402a324fa458e94f63ea05d479da961696d3",
+    "SKSE\\Plugins\\SVRPhysicalDoors.dll": "0e4d9a11e7c0063d137e186bd77d340811b79aa68e305b4b8ba75fd95b9b62e3",
     "SKSE\\Plugins\\SVRPhysicalDoors.ini": "35eb3a974ca77c08b382e4a2f558003137acebd8fd96b4bc3db7abe388d9acff"
-  },
-  "known_limits": "Floating/misplaced-door reports on other modlists are still under investigation. The specific Lakeview Manor cellar hatch has not been verified. NPC changes are not a guarantee for scripted/locked doors or arbitrary AI/physics overhauls. Public-API PCVR hand interaction has not been headset-tested on an unmodified PCVR setup."
+  }
 }

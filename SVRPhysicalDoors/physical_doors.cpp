@@ -269,7 +269,8 @@ static std::unordered_set<RE::FormID> supported;
 static std::unordered_map<RE::FormID,const ModelProfile*> assignedProfiles;
 static std::atomic_uint64_t updateTicks=0,physicsTicks=0,discoveryPasses=0;
 static std::mutex stateMutex;
-static std::vector<RE::ObjectRefHandle> queuedActivation;
+struct ActivationRequest { RE::ObjectRefHandle handle; bool lockpick; };
+static std::vector<ActivationRequest> queuedActivation;
 static std::atomic_bool menuSuspended=false;
 static std::atomic_bool discoveryRequested=true;
 static RE::ObjectRefHandle lastInteraction;
@@ -343,9 +344,9 @@ static void collect(RE::NiAVObject* root,RE::NiAVObject* n,std::vector<Leaf>& le
  }
  if(auto node=n->AsNode())for(auto& child:node->GetChildren())collect(root,child.get(),leaves,model,depth+1);
 }
-static void queue(Door& d){
+static void queue(Door& d,bool lockpick=false){
  if(d.activated || d.cooldown>0)return;
- queuedActivation.push_back(d.handle);d.activated=true;d.cooldown=3.f;
+ queuedActivation.push_back({d.handle,lockpick});d.activated=true;d.cooldown=3.f;
 }
 static float shadowAngle(const Leaf& l,RE::hkpRigidBody* anchor){
  if(!l.shadow)return 1.4f;
@@ -596,7 +597,7 @@ static void dropped(bool left,RE::TESObjectREFR* ref){releaseGraceEvent(left,ref
 static void grabbed(bool left,RE::TESObjectREFR* ref){
  if(!ref)return;releaseGraceEvent(left,ref,true);std::lock_guard guard(stateMutex);
  for(auto& d:doors)if(d.handle==ref->GetHandle() && !d.teleport){d.npcTime=0;d.nativeLatchTime=0;d.closeRetryUntil=0;}
- for(auto& d:doors)if(d.handle==ref->GetHandle() && DoorLockpickIntent(d.locked,true,settings.lockpickOnGrab)){queue(d);break;}
+ for(auto& d:doors)if(d.handle==ref->GetHandle() && DoorLockpickIntent(d.locked,true,settings.lockpickOnGrab)){queue(d,true);break;}
 }
 static void enforceAnchors(){
  auto api=HiggsAPI::g_higgs;if(!api)return;
@@ -665,6 +666,10 @@ static void enforceAnchors(){
   }
  }
 }
+static bool activatorsOwnRiftenStall=false;
+static bool delegatedDoor(const ModelProfile& model){
+ return activatorsOwnRiftenStall && std::string_view(model.original)=="architecture\\riften\\rtmarketstalldoor01.nif";
+}
 static void update(){
  ++updateTicks;pollMcmSettings();discoveryHeartbeat("post-higgs");
  if(!gameReady.load())return;
@@ -672,7 +677,8 @@ static void update(){
  auto player=RE::PlayerCharacter::GetSingleton();auto tes=RE::TES::GetSingleton();
  if(!player || !tes || !player->GetParentCell() || !player->Get3D())return;
  if(auto ui=RE::UI::GetSingleton();ui && ui->GameIsPaused())return;
- std::vector<RE::ObjectRefHandle> activate,close,npcOpen;
+ std::vector<ActivationRequest> activate;
+ std::vector<RE::ObjectRefHandle> close,npcOpen;
  {
   std::lock_guard guard(stateMutex);activate.swap(queuedActivation);
   for(auto& d:doors)if(auto ref=d.handle.get();ref && ref->Get3D()==d.root){
@@ -716,8 +722,13 @@ static void update(){
   }
  }
  // Engine activation and lockpick/teleport actions run outside the physics world lock.
- for(auto& h:activate)if(auto ref=h.get()){
-  if(!ref->Get3D())continue;
+ for(const auto& request:activate)if(auto ref=request.handle.get()){
+  if(!ref->Get3D() || ref->IsLocked()!=request.lockpick)continue;
+  if(request.lockpick){
+   auto api=HiggsAPI::g_higgs;
+   if(!api || (api->GetGrabbedObject(true)!=ref.get() && api->GetGrabbedObject(false)!=ref.get()))continue;
+  }
+  const auto& h=request.handle;
   lastInteraction=h;
   // ActivateRef may start an animation/delay before LoadingMenu actually opens.
   // Keep pose/velocity/activation state during that delay. LoadingMenu's opening
@@ -731,7 +742,7 @@ static void update(){
    std::lock_guard guard(stateMutex);
    for(auto& d:doors)if(d.handle==h){d.activated=false;d.cooldown=.75f;break;}
   }
-  logFile<<"activate ref="<<std::hex<<ref->GetFormID()<<std::dec<<" locked="<<ref->IsLocked()<<" accepted="<<success<<'\n';logFile.flush();
+  logFile<<"activate ref="<<std::hex<<ref->GetFormID()<<std::dec<<" reason="<<(request.lockpick?"grab-lockpick":"opening-motion")<<" locked="<<ref->IsLocked()<<" accepted="<<success<<'\n';logFile.flush();
  }
  // Scan immediately after loading; keep the existing amortized cadence otherwise.
  static unsigned frame=0;if(++frame%6 && !discoveryRequested.exchange(false))return;
@@ -749,7 +760,7 @@ static void update(){
    auto name=NormalizeDoorModel(door->GetModel()?door->GetModel():"");
    for(const auto& model:MODELS)if(name==model.physical){assigned=&model;break;}
   }
-  if(!assigned)return RE::BSContainer::ForEachResult::kContinue;
+  if(!assigned || delegatedDoor(*assigned))return RE::BSContainer::ForEachResult::kContinue;
   Door d;d.handle=ref->GetHandle();d.root=ref->loadedData->data3D.get();d.locked=ref->IsLocked() || ref->IsActivationBlocked();
   d.teleport=ref->extraList.GetByType<RE::ExtraTeleport>()!=nullptr;
   ++visited;
@@ -810,6 +821,10 @@ static void install(){
  auto api=HiggsAPI::GetHiggsInterface();auto data=RE::TESDataHandler::GetSingleton(false);
  if(!api || !data){logFile<<"HIGGS or data handler unavailable; no models changed\n";logFile.flush();return;}
  loadSettings();
+ activatorsOwnRiftenStall=GetModuleHandleW(L"InteractiveActivatorsVR.dll") &&
+  (data->LookupLoadedModByName("InteractiveActivatorsVR.esp") ||
+   data->LookupLoadedLightModByName("InteractiveActivatorsVR.esp"));
+ if(activatorsOwnRiftenStall)logFile<<"Riften market stall door delegated to Interactive Activators VR\n";
  higgsSelection[0]=data->LookupForm<RE::TESEffectShader>(0x6F00,"higgs_vr.esp");higgsSelection[1]=data->LookupForm<RE::TESEffectShader>(0x6F01,"higgs_vr.esp");
  logFile<<"HIGGS API build="<<api->GetBuildNumber()<<"; discovery identity=form-id profile cache\n";
  capsuleMassThreshold=configuredCapsuleMass(api);
@@ -817,6 +832,7 @@ static void install(){
  for(auto door:data->GetFormArray<RE::TESObjectDOOR>()){
   if(!door)continue;std::string name=NormalizeDoorModel(door->GetModel()?door->GetModel():"");
   for(const auto& model:MODELS)if(DoorModelMatches(name,model.original,model.physical)){
+   if(delegatedDoor(model))break;
    auto path=std::filesystem::path("Data/meshes")/model.physical;
    if(!std::filesystem::exists(path)){logFile<<"missing mesh "<<model.physical<<'\n';break;}
    if(name==model.original)door->SetModel(model.physical);
@@ -843,11 +859,11 @@ static void install(){
  logFile<<"PCVR hand-ray bridge="<<(pcvrHandRayGroup!=nullptr || pcvrHandRayGetter!=nullptr)<<"; stack walking disabled\n";
  api->AddPreVrikPreHiggsCallback(restoreBuiltinHands);api->AddPostVrikPreHiggsCallback(sampleBuiltinHands);
  api->AddPostVrikPreHiggsCallback(repairSelectionLinks);api->AddCollisionFilterComparisonCallback(comparePortal);api->AddPrePhysicsStepCallback(physics);api->AddPostVrikPostHiggsCallback(update);api->AddPostVrikPostHiggsCallback(enforceAnchors);api->AddPostVrikPostHiggsCallback(applyBuiltinHands);api->AddGrabbedCallback(grabbed);api->AddDroppedCallback(dropped);api->AddPostVrikPostHiggsCallback(suppressDoorHighlight);
- logFile<<"G1.40 gravity lids; NPC contact native-open fallback; capsule-only actor contacts; permeable grilles; confirmed released close-state sync; physical display-case hinges; reference lifecycle repair; native display-case fallback; portal threshold=12deg; integrated optional hand interaction; half-second sustained palm contact gate; native ordinary-door state sync; release grace=0.5s; registered; patched base doors="<<supported.size()<<" models="<<std::size(MODELS)<<"; contour colliders; per-leaf wall contact suppression; actor/hand contacts retained; size-based mass; cell tracking reset\n";logFile.flush();
+ logFile<<"G1.41 Riften stall delegation; validated lockpick intent; gravity lids; NPC contact native-open fallback; capsule-only actor contacts; permeable grilles; confirmed released close-state sync; physical display-case hinges; reference lifecycle repair; native display-case fallback; portal threshold=12deg; integrated optional hand interaction; half-second sustained palm contact gate; native ordinary-door state sync; release grace=0.5s; registered; patched base doors="<<supported.size()<<" models="<<std::size(MODELS)<<"; contour colliders; per-leaf wall contact suppression; actor/hand contacts retained; size-based mass; cell tracking reset\n";logFile.flush();
  phase.store("waiting for save load / native model loading");
 }
 SKSE_EXPORT constinit SKSE::PluginDeclaration SKSEPlugin_Version({
- .Version=REL::Version{0,1,40,0},.Name="SVRPhysicalDoors"sv,.Author="Local physical doors"sv,
+ .Version=REL::Version{0,1,41,0},.Name="SVRPhysicalDoors"sv,.Author="Local physical doors"sv,
  .StructCompatibility=SKSE::StructCompatibility::Dependent,
  .RuntimeCompatibility={REL::Version{1,4,15,0},REL::Version{1,4,15,1}},.MinimumSKSEVersion=REL::Version{0,0,0,0}
 });
